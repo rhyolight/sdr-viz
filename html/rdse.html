@@ -28,14 +28,30 @@
             <div class="col-md-2 data-label">resolution</div>
             <div class="col-md-3 description">
                 A floating point positive number denoting the resolution
-                of the output representation. Numbers within
-                [offset-resolution/2, offset+resolution/2] will fall into
-                the same bucket and thus have an identical representation.
-                Adjacent buckets will differ in one bit. resolution is a
-                required parameter.
+                of the output representation.
             </div>
             <div class="col-md-1" id="resolution-display">loading...</div>
             <div class="col-md-6 slider" id="resolution-slider"></div>
+        </div>
+
+        <div class="row">
+            <!-- min -->
+            <div class="col-md-2 data-label">min</div>
+            <div class="col-md-3 description">
+                Minimum value.
+            </div>
+            <div class="col-md-1" id="min-display">loading...</div>
+            <div class="col-md-6 slider" id="min-slider"></div>
+        </div>
+
+        <div class="row">
+            <!-- max -->
+            <div class="col-md-2 data-label">max</div>
+            <div class="col-md-3 description">
+                Maximum value.
+            </div>
+            <div class="col-md-1" id="max-display">loading...</div>
+            <div class="col-md-6 slider" id="max-slider"></div>
         </div>
 
         <div class="row">
@@ -46,6 +62,16 @@
             </div>
             <div class="col-md-1" id="value-display">loading...</div>
             <div class="col-md-6 slider" id="value-slider"></div>
+        </div>
+
+        <div class="row">
+            <!-- range -->
+            <div class="col-md-2 data-label">range</div>
+            <div class="col-md-3 description">
+                max - min
+            </div>
+            <div class="col-md-1" id="range-display">loading...</div>
+            <div class="col-md-6"></div>
         </div>
 
         <div class="row">
@@ -80,7 +106,7 @@
                 How many buckets within the RDSE.
             </div>
             <div class="col-md-1" id="buckets-display">loading...</div>
-            <div class="col-md-6"></div>
+            <div class="col-md-6 slider" id="bucket-slider"></div>
         </div>
 
     </div>

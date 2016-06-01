@@ -67,7 +67,9 @@ $(function() {
             this._offset = x;
         }
 
-        bucketIdx = this._maxBuckets / 2 + parseInt(Math.round((x - this._offset) / this.resolution));
+        bucketIdx = this._maxBuckets / 2 + parseInt(
+            Math.round((x - this._offset) / this.resolution)
+        );
 
         if (bucketIdx < 0) {
             bucketIdx = 0;
@@ -162,6 +164,7 @@ $(function() {
     };
 
     RDSE.prototype._createBucket = function(index) {
+        console.log('createBucket(%s)', index);
         //Create the given bucket index. Recursively create as many in-between
         //bucket indices as necessary.
         if (index < this.minIndex) {
@@ -201,6 +204,7 @@ $(function() {
         if (_.keys(this.bucketMap).indexOf(index.toString()) == -1) {
             this._createBucket(index);
         }
+        console.log('using known bits for %s', index);
         return this.bucketMap[index];
     };
 
