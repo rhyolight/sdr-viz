@@ -70,18 +70,16 @@ class SPInterface:
       connectedSynapseIndices = []
       sp.getConnectedSynapses(colIndex, connectedSynapses)
 
-      # potentialPool = []
-      # potentialPoolIndices = []
-      # sp.getPotential(colIndex, potentialPool)
+      iterConnectedSynapses = np.nditer(
+        connectedSynapses[np.equal(connectedSynapses, 1.0)],
+        flags=['f_index']
+      )
 
-      for i, synapse in enumerate(connectedSynapses):
-        if np.asscalar(synapse) == 1.0:
-          connectedSynapseIndices.append(i)
-        # if np.asscalar(potentialPool[i]) == 1.0:
-        #   potentialPoolIndices.append(i)
+      while not iterConnectedSynapses.finished:
+        connectedSynapseIndices.append(iterConnectedSynapses.index)
+        iterConnectedSynapses.iternext()
 
       colConnectedSynapses.append(connectedSynapseIndices)
-      # colPotentialPools.append(potentialPoolIndices)
 
     response = {
       "activeColumns": [int(bit) for bit in activeCols.tolist()],
