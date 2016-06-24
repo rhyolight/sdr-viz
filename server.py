@@ -64,28 +64,29 @@ class SPInterface:
     web.header("Content-Type", "application/json")
     colConnectedSynapses = []
     colPotentialPools = []
-    for colIndex in range(0, sp.getNumColumns()):
 
-      connectedSynapses = []
-      connectedSynapseIndices = []
-      sp.getConnectedSynapses(colIndex, connectedSynapses)
+    # for colIndex in range(0, sp.getNumColumns()):
 
-      # potentialPool = []
-      # potentialPoolIndices = []
-      # sp.getPotential(colIndex, potentialPool)
+    #   connectedSynapses = []
+    #   connectedSynapseIndices = []
+    #   sp.getConnectedSynapses(colIndex, connectedSynapses)
 
-      for i, synapse in enumerate(connectedSynapses):
-        if np.asscalar(synapse) == 1.0:
-          connectedSynapseIndices.append(i)
-        # if np.asscalar(potentialPool[i]) == 1.0:
-        #   potentialPoolIndices.append(i)
+    #   # potentialPool = []
+    #   # potentialPoolIndices = []
+    #   # sp.getPotential(colIndex, potentialPool)
 
-      colConnectedSynapses.append(connectedSynapseIndices)
-      # colPotentialPools.append(potentialPoolIndices)
+    #   for i, synapse in enumerate(connectedSynapses):
+    #     if np.asscalar(synapse) == 1.0:
+    #       connectedSynapseIndices.append(i)
+    #     # if np.asscalar(potentialPool[i]) == 1.0:
+    #     #   potentialPoolIndices.append(i)
+
+    #   colConnectedSynapses.append(connectedSynapseIndices)
+    #   # colPotentialPools.append(potentialPoolIndices)
 
     response = {
       "activeColumns": [int(bit) for bit in activeCols.tolist()],
-      "connectedSynapses": colConnectedSynapses,
+      # "connectedSynapses": colConnectedSynapses,
       # "potentialPool": colPotentialPools,
     }
 
