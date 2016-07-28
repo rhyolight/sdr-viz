@@ -1,30 +1,18 @@
-import os
 import numpy as np
-import json
-import time
 
-import redis
-
-# storage keys
-CON_SYN = "connectedSynapses"
-PERMS = "permanences"
-POT_POOLS = "potentialPools"
-ACT_COL = "activeColumns"
-OVERLAPS = "overlaps"
-
-
-def compressBinarySdr(sdr):
-  out = {
-    "length": len(sdr)
-  }
-  indicesOut = []
-  for i, bit in enumerate(sdr):
-    if bit == 1 or bit == 1.0: indicesOut.append(i)
-  out["indices"] = indicesOut
-  return out
+from utils import getSpColumnHistory
 
 
 class SpWrapper:
+
+  # storage keys
+  CON_SYN = "connectedSynapses"
+  PERMS = "permanences"
+  POT_POOLS = "potentialPools"
+  ACT_COL = "activeColumns"
+  ACT_DC = "activeDutyCycles"
+  OVP_DC = "overlapDutyCycles"
+  OVERLAPS = "overlaps"
 
 
   def __init__(self, id, sp, save=True):
@@ -36,23 +24,24 @@ class SpWrapper:
     self._index = -1
     self._currentState = None
     self.save = save
-    self.redis = redis.Redis("localhost")
 
 
   def compute(self, inputArray, learn):
     sp = self._sp
     columns = np.zeros(sp._numColumns, dtype="uint32")
     sp.compute(inputArray, learn, columns)
-    self._lastInput = compressBinarySdr(inputArray)
-    self._lastActiveColumns = compressBinarySdr(columns)
+    self._lastInput = inputArray
+    self._lastActiveColumns = columns
     self._index += 1
-    return self.getCurrentState()
 
 
-  def getCurrentState(self, 
-                      getPotentialPools=False, 
+  def getCurrentState(self,
+                      getPotentialPools=False,
                       getConnectedSynapses=False,
-                      getPermanences=False):
+                      getPermanences=False,
+                      getActiveDutyCycles=False,
+                      getOverlapDutyCycles=False,
+                     ):
 
     currentState = dict()
 
@@ -62,20 +51,22 @@ class SpWrapper:
     except RuntimeError:
       activeColumns = None
 
-    overlaps = self.getOverlaps()
-    currentState[OVERLAPS] = overlaps
+    currentState[OVERLAPS] = self.getOverlaps()
 
     if getPotentialPools:
-      pools = self._calculatePotentialPools()
-      currentState[POT_POOLS] = pools
+      currentState[POT_POOLS] = self._calculatePotentialPools()
 
     if getConnectedSynapses:
-      synapses = self._calculateConnectedSynapses()
-      currentState[CON_SYN] = synapses
+      currentState[CON_SYN] = self._calculateConnectedSynapses()
 
     if getPermanences:
-      perms = self._calculatePermanences()
-      currentState[PERMS] = perms
+      currentState[PERMS] = self._calculatePermanences()
+
+    if getActiveDutyCycles:
+      currentState[ACT_DC] = self._calculateActiveDutyCycles()
+
+    if getOverlapDutyCycles:
+      currentState[OVP_DC] = self._calculateOverlapDutyCycles()
 
     self._currentState = currentState
     return currentState
@@ -95,66 +86,16 @@ class SpWrapper:
     return self._sp.getOverlaps().tolist()
 
 
-  def saveStateToRedis(self):
-    start = time.time()
-    if self._lastInput is None:
-      raise ValueError("Cannot save SP state because it has never seen input.")
-    state = self.getCurrentState(
-      getConnectedSynapses=True,
-      getPermanences=True,
-    )
-
-    # Active columns and overlaps are small, and can be saved in one key for
-    # each time step.
-    for outType in [ACT_COL, OVERLAPS]:
-      key = "{}_{}_{}".format(self._id, self._index, outType)
-      payload = dict()
-      payload[outType] = state[outType]
-      self.redis.set(key, json.dumps(payload))
-
-    # Connected synapses are big, and will be broken out and saved in one file
-    # per column, so they can be retrieved more efficiently by column by the
-    # client later.
-    columnSynapses = state[CON_SYN]
-    for columnIndex, connections in enumerate(columnSynapses):
-      key = "{}_{}_col-{}_{}".format(self._id, self._index, columnIndex, CON_SYN)
-      self.redis.set(key, json.dumps(columnSynapses[columnIndex]))
-
-    # Permanences are also big, so same thing. 
-    perms = state[PERMS]
-    for columnIndex, permanences in enumerate(perms):
-      key = "{}_{}_col-{}_{}".format(self._id, self._index, columnIndex, PERMS)
-      self.redis.set(key, json.dumps(perms[columnIndex]))
-
-    end = time.time()
-    print("\tSP state serialization took %g seconds" % (end - start))
-
-
-
   def getConnectionHistoryForColumn(self, columnIndex):
-    return self._getColumnHistory(columnIndex, CON_SYN)
+    return self._getColumnHistory(columnIndex, self.CON_SYN)
 
 
   def getPermanenceHistoryForColumn(self, columnIndex):
-    return self._getColumnHistory(columnIndex, PERMS)
+    return self._getColumnHistory(columnIndex, self.PERMS)
 
 
   def _getColumnHistory(self, columnIndex, subject):
-    searchString = "{}_*_col-{}_{}".format(self._id, columnIndex, subject)
-    keys = self.redis.keys(searchString)
-    columnsOut = []
-    # Doing a range because the files need to be processed in the order the data
-    # was processed, using the data cursor counting up from 0.
-    for cursor in range(0, len(keys)):
-      key = "{}_{}_col-{}_{}".format(
-        self._id, cursor, columnIndex, subject
-      )
-      data = self.redis.get(key)
-      if data is None:
-        print "WARNING: Missing {} data for key: {}".format(subject, key)
-        data = "[]"
-      columnsOut.append(json.loads(data))
-    return columnsOut
+    return getSpColumnHistory(self._id, columnIndex, subject)
 
 
   def _calculatePotentialPools(self):
@@ -176,27 +117,42 @@ class SpWrapper:
     if self._currentState is not None and CON_SYN in self._currentState:
       return self._currentState[CON_SYN]
     sp = self._sp
-    colConnectedSynapses = []
+    columns = []
     for colIndex in range(0, sp.getNumColumns()):
       connectedSynapses = np.zeros(shape=(sp.getInputDimensions(),))
-      permIndices = []
       sp.getConnectedSynapses(colIndex, connectedSynapses)
       permIndices = np.nonzero(connectedSynapses)
-      colConnectedSynapses.append(permIndices[0].tolist())
-    return colConnectedSynapses
+      columns.append(permIndices[0].tolist())
+    return columns
 
 
   def _calculatePermanences(self):
     if self._currentState is not None and PERMS in self._currentState:
       return self._currentState[PERMS]
     sp = self._sp
-    colPerms = []
+    columns = []
     for colIndex in range(0, sp.getNumColumns()):
       perms = np.zeros(shape=(sp.getInputDimensions(),))
       permIndices = []
       sp.getPermanence(colIndex, perms)
-      colPerms.append([round(perm, 2) for perm in perms.tolist()])
-    return colPerms
+      columns.append([round(perm, 2) for perm in perms.tolist()])
+    return columns
+
+
+  def _calculateActiveDutyCycles(self):
+    sp = self._sp
+    dutyCycles = np.zeros(shape=(sp.getNumColumns(),))
+    sp.getActiveDutyCycles(dutyCycles)
+    return dutyCycles.tolist()
+
+
+
+  def _calculateOverlapDutyCycles(self):
+    sp = self._sp
+    dutyCycles = np.zeros(shape=(sp.getNumColumns(),))
+    sp.getOverlapDutyCycles(dutyCycles)
+    return dutyCycles.tolist()
+
 
 
   def getHistory(self, cursor):

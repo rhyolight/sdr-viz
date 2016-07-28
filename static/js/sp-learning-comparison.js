@@ -26,6 +26,7 @@ $(function() {
 
     var randomSpClient;
     var learningSpClient;
+    var saveSp = true;
 
     // SP params we are not allowing user to change
     var inputDimensions = [
@@ -41,11 +42,11 @@ $(function() {
     var chartWidth = 2000;
     var chartHeight = 120;
     var randomChart = new HTM.utils.chart.InputChart(
-        '#random-chart', '/static/data/hotgym-short.csv',
+        '#random-chart', '/static/data/hotgym-shift.csv',
         chartWidth, chartHeight
     );
     var learningChart = new HTM.utils.chart.InputChart(
-        '#learning-chart', '/static/data/hotgym-short.csv',
+        '#learning-chart', '/static/data/hotgym-shift.csv',
         chartWidth, chartHeight
     );
 
@@ -87,8 +88,8 @@ $(function() {
     function initSp(callback) {
         var params = spParams.getParams();
         loading(true);
-        randomSpClient = new HTM.SpatialPoolerClient(false);
-        learningSpClient = new HTM.SpatialPoolerClient(false);
+        randomSpClient = new HTM.SpatialPoolerClient(saveSp);
+        learningSpClient = new HTM.SpatialPoolerClient(saveSp);
         randomSpClient.initialize(params, function() {
             learningSpClient.initialize(params, function() {
                 loading(false);
@@ -200,15 +201,11 @@ $(function() {
         }
 
         // Run encoding through SP.
-        randomSpClient.compute(encoding, {
-            learn: learn
-        }, function(randomSpBits) {
+        randomSpClient.compute(encoding, learn, function(randomSpBits) {
             var randomAc = randomSpBits.activeColumns;
             var showPerc = 0.1;
 
-            learningSpClient.compute(encoding, {
-                learn: true
-            }, function(learningSpBits) {
+            learningSpClient.compute(encoding, learn, function(learningSpBits) {
                 var learningAc = learningSpBits.activeColumns;
 
                 var closeRandomAc = getClosest(randomAc, randomHistory.activeColumns, data, showPerc);
@@ -255,6 +252,10 @@ $(function() {
                     $btn.find('span').attr('class', 'glyphicon glyphicon-pause');
                 }
                 $btn.toggleClass('btn-success');
+            } else {
+                runOnePointThroughSp();
+                randomChart.dataCursor++;
+                learningChart.dataCursor++;
             }
         });
     }

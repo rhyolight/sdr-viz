@@ -1,19 +1,26 @@
 import time
 import json
 import uuid
-import os
-import re
 import multiprocessing
 
 import web
-import numpy as np
 
 from nupic.research.spatial_pooler import SpatialPooler as SP
 
 from htmschoolviz import SpWrapper
+from htmschoolviz.utils import saveStateToRedis, compress, decompress
+
 
 global spWrappers
 spWrappers = {}
+
+SP_DETAILS = [
+  "permanences",
+  "connectedSynapses",
+  "potentialPools",
+  "activeDutyCycles",
+  "overlapDutyCycles",
+]
 
 urls = (
   "/", "Index",
@@ -31,7 +38,6 @@ def templateNameToTitle(name):
   if "-" in title:
     title = title.replace("-", " ")
   return title.title()
-
 
 
 class Index:
@@ -61,41 +67,38 @@ class Client:
       )
 
 
+def getSpDetails(requestInput, sp):
+  kwargs = {}
+  for param in SP_DETAILS:
+    key = "get{}{}".format(param[:1].upper(), param[1:])
+    kwargs[key] = param in requestInput and requestInput[param] == "true"
+  state = sp.getCurrentState(**kwargs)
+  # Compress any SDRs.
+  return state
+
 
 class SPInterface:
 
 
   def POST(self):
     global spWrappers
-
     params = json.loads(web.data())
-
     requestInput = web.input()
-    detailedResponse = "detailed" in requestInput \
-                  and requestInput["detailed"] == "true"
     savedSp = "save" in requestInput \
                   and requestInput["save"] == "true"
-
-    print "\n{}\n".format(savedSp)
-
     sp = SP(**params)
     spId = str(uuid.uuid4()).split('-')[0]
     wrapper = SpWrapper(spId, sp, save=savedSp)
     spWrappers[spId] = wrapper
     web.header("Content-Type", "application/json")
+    # Send back the SP id and any details about the initial state that the client
+    # specified in the request's URL params.
     payload = {
       "id": spId,
     }
-
-    if detailedResponse:
-      spState = wrapper.getCurrentState(
-        getPotentialPools=True,
-        getConnectedSynapses=True,
-        getPermanences=True,
-      )
-      for key in spState:
-        payload[key] = spState[key]
-
+    spState = getSpDetails(requestInput, wrapper)
+    for key in spState:
+      payload[key] = spState[key]
     return json.dumps(payload)
 
 
@@ -103,41 +106,32 @@ class SPInterface:
     requestStart = time.time()
     requestInput = web.input()
     encoding = web.data()
-
-    getSynapses = "getConnectedSynapses" in requestInput \
-                  and requestInput["getConnectedSynapses"] == "true"
-    getPools = "potentialPools" in requestInput \
-               and requestInput["potentialPools"] == "true"
-
+    # Every request must specify an SP id.
     if "id" not in requestInput:
       print "Request must include a spatial pooler id."
       return web.badrequest()
-
+    # The SP id must be valid.
     spId = requestInput["id"]
-
     if spId not in spWrappers:
       print "Unknown SP id {}!".format(spId)
       return web.badrequest()
 
     sp = spWrappers[spId]
-
+    # Learn by default, allow request input to specify.
     learn = True
     if "learn" in requestInput:
       learn = requestInput["learn"] == "true"
-
-    inputArray = np.array([int(bit) for bit in encoding.split(",")])
+    print encoding
+    # Decompress input encoding.
+    inputArray = decompress(json.loads(encoding))
 
     print "Entering SP compute cycle | Learning: {}".format(learn)
 
-    response = sp.compute(inputArray, learn)
+    sp.compute(inputArray, learn)
 
     web.header("Content-Type", "application/json")
 
-    if getSynapses or getPools:
-      response = sp.getCurrentState(
-        getConnectedSynapses=getSynapses,
-        getPotentialPools=getPools
-      )
+    response = getSpDetails(requestInput, sp)
 
     if sp.save:
       self.saveSpStateInBackground(sp)
@@ -150,7 +144,7 @@ class SPInterface:
 
   @staticmethod
   def saveSpStateInBackground(spWrapper):
-    p = multiprocessing.Process(target=spWrapper.saveStateToRedis)
+    p = multiprocessing.Process(target=saveStateToRedis, args=(spWrapper,))
     p.start()
 
 

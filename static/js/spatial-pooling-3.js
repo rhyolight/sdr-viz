@@ -17,8 +17,11 @@ $(function() {
 
     var getConnectedSynapses;
     var getPotentialPools;
+    var getActiveDutyCycles = true;
+    var getOverlapDutyCycles = true;
 
     var spClient;
+    var learn = true;
 
     // SP params we are not allowing user to change
     var inputDimensions = [
@@ -98,9 +101,11 @@ $(function() {
         encoding = encoding.concat(dateEncoder.encodeWeekend(date));
 
         // Run encoding through SP.
-        spClient.compute(encoding, {
-            getConnectedSynapses: getConnectedSynapses,
-            getPotentialPools: getPotentialPools
+        spClient.compute(encoding, learn, {
+            connectedSynapses: getConnectedSynapses,
+            potentialPools: getPotentialPools,
+            activeDutyCycles: getActiveDutyCycles,
+            overlapDutyCycles: getOverlapDutyCycles
         }, function(spBits) {
             spViz.render(
                 encoding,

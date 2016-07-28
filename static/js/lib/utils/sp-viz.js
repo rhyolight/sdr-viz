@@ -610,7 +610,6 @@ $(function() {
         var rowLength = Math.floor(width / fullRectSize);
         var connections = this._connections;
         var permanences = this._permanences;
-        var potentialPools = this.potentialPools;
         var circleColor = '#6762ff';
 
         d3.select('#col-connections-svg')
@@ -635,14 +634,10 @@ $(function() {
                 return i;
             })
             .attr('style', function (d, i) {
-                //var potentialPool = potentialPools[i];
                 var fill = ( d == 1 ? '#CCC' : 'white');
                 var permanence = permanences[cursor][i] * 100;
                 var stroke = '#' + getGreenToRed(100 - permanence);
                 var strokeWidth = 1;
-                //if (potentialPool.indexOf(i) == -1) {
-                //    stroke = 'white';
-                //}
                 console.log('%s : connection to input index %s is %s', stroke, i, permanence);
                 return 'stroke:' + stroke + ';'
                     + 'fill:' + fill + ';'

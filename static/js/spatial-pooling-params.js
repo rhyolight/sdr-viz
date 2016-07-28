@@ -17,6 +17,7 @@ $(function() {
     var inputGridWidth = Math.floor(Math.sqrt(inputRange));
 
     var spClient;
+    var learn = true;
 
     var getConnectedSynapses = false;
     var getPotentialPools = false;
@@ -75,9 +76,9 @@ $(function() {
         $('text').click(function() {
             inputValue = parseInt($(this).html());
             inputEncoding = scalarEncoder.encode(inputValue);
-            spClient.compute(inputEncoding, {
-                getConnectedSynapses: getConnectedSynapses,
-                getPotentialPools: getPotentialPools
+            spClient.compute(inputEncoding, learn, {
+                connectedSynapses: getConnectedSynapses,
+                potentialPools: getPotentialPools
             }, function(spBits) {
                 spViz.render(
                     inputEncoding,
@@ -96,9 +97,9 @@ $(function() {
         spClient.initialize(spParams.getParams(), function() {
 
             if (inputEncoding) {
-                spClient.compute(inputEncoding, {
-                    getConnectedSynapses: getConnectedSynapses,
-                    getPotentialPools: getPotentialPools
+                spClient.compute(inputEncoding, learn, {
+                    connectedSynapses: getConnectedSynapses,
+                    potentialPools: getPotentialPools
                 }, function(spBits) {
                     spViz.render(
                         inputEncoding,
@@ -124,9 +125,9 @@ $(function() {
                 getConnectedSynapses = showConnectedSynapses;
                 getPotentialPools = showPotentialPools;
                 loading(true);
-                spClient.compute(inputEncoding, {
-                    getConnectedSynapses: getConnectedSynapses,
-                    getPotentialPools: getPotentialPools
+                spClient.compute(inputEncoding, learn, {
+                    connectedSynapses: getConnectedSynapses,
+                    potentialPools: getPotentialPools
                 }, function(spBits) {
                     loading(false);
                     spViz.render(

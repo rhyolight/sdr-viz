@@ -25,6 +25,7 @@ $(function() {
     var playing = false;
 
     var spClient;
+    var learn = false;
     var inputN = 400;
 
     // SP params we are not allowing user to change
@@ -76,9 +77,9 @@ $(function() {
 
         // Run encoding through SP.
         loading(true, false);
-        spClient.compute(inputEncoding, {
-            getConnectedSynapses: getConnectedSynapses,
-            getPotentialPools: getPotentialPools
+        spClient.compute(inputEncoding, learn, {
+            connectedSynapses: getConnectedSynapses,
+            potentialPools: getPotentialPools
         }, function(spBits) {
             activeColumns = spBits.activeColumns;
             overlaps = spBits.overlaps;

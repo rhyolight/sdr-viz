@@ -71,7 +71,9 @@ $(function() {
         spClient = new HTM.SpatialPoolerClient();
         loading(true);
         spClient.initialize(spParams.getParams(), {
-            detailed: true
+            potentialPools: true,
+            connectedSynapses: true,
+            permanences: true
         }, function(resp) {
             loading(false);
             if (callback) callback(resp);
