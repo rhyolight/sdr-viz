@@ -170,6 +170,19 @@ $(function() {
         }
     }
 
+    function buildLegend() {
+        var $legend = $('#legend ul');
+        _.each(cellStates, function(state) {
+            var $item = $('<li>');
+            var $span = $('<span>');
+            var $name = $('<p>' + state.description + '</p>');
+            $span.css('background-color', '#' + state.color.getHexString());
+            $span.appendTo($item);
+            $name.appendTo($item);
+            $item.appendTo($legend);
+        });
+    }
+
     function updatePredictions(beat) {
         // Display predictions on next beat.
         var predictedValue = htmState.inference[0][1];
@@ -453,21 +466,21 @@ $(function() {
             if (activeCellIndices.indexOf(globalCellIndex) > -1) {
                 // Cell is active.
                 state = cellStates.active;
-                if (predictiveCellIndices.indexOf(globalCellIndex) > -1) {
-                    state = cellStates.predictiveActive;
-                }
-                if (lastPredictedCells.indexOf(globalCellIndex) > -1) {
-                    state = cellStates.correctlyPredicted;
-                }
+                // if (predictiveCellIndices.indexOf(globalCellIndex) > -1) {
+                //     state = cellStates.predictiveActive;
+                // }
+                // if (lastPredictedCells.indexOf(globalCellIndex) > -1) {
+                //     state = cellStates.correctlyPredicted;
+                // }
             } else if (predictiveCellIndices.indexOf(globalCellIndex) > -1) {
                 // Cell is predictive.
                 state = cellStates.predictive;
             } else {
                 // Cell is not active.
-                if (predictiveCellIndices.indexOf(globalCellIndex) > -1) {
-                    // Cell was predicted last step, but not active.
-                    state = cellStates.wronglyPredicted;
-                }
+                // if (predictiveCellIndices.indexOf(globalCellIndex) > -1) {
+                //     // Cell was predicted last step, but not active.
+                //     state = cellStates.wronglyPredicted;
+                // }
             }
 
             spColumns.update(globalCellIndex, {
@@ -777,6 +790,7 @@ $(function() {
             setupCellViz();
             addClickHandling();
             setupDatGui();
+            buildLegend();
             addDataControlHandlers();
             loading(false);
         });

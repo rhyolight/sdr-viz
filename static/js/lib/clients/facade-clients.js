@@ -80,7 +80,7 @@ $(function() {
             opts = {};
         }
         if (this.save) {
-            opts.save = this.save.join(',');
+            opts.save = true;
         }
 
         function doInit() {
