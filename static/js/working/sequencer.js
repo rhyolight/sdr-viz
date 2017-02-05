@@ -290,7 +290,13 @@ $(function() {
     function addClickHandling() {
 
         function inputClicked(cellData) {
-
+            cellData.cellIndex = xyzToOneDimIndex(
+                cellData.z, cellData.x, cellData.y,
+                inputCells.getZ(), inputCells.getX(), inputCells.getY()
+            );
+            inputCells.selectedCell = cellData.cellIndex;
+            console.log( "clicked:  input cell %s", inputCells.selectedCell);
+            updateCellRepresentations();
         }
 
         function spClicked(cellData) {
@@ -383,9 +389,9 @@ $(function() {
     function selectCell(cellValue, activeSegments) {
         _.each(activeSegments, function(segment) {
             if (cellStateIsActive(cellValue.state)) {
-                // Cell is ACTIVE
                 _.each(segment.synapses, function(synapse) {
                     if (synapse.presynapticCell == cellValue.cellIndex) {
+                        // Active cells are the source for distal segments.
                         cellviz.distalSegments.push({
                             source: cellValue.cellIndex,
                             target: segment.cell
@@ -393,9 +399,9 @@ $(function() {
                     }
                 });
             } else if (cellStateIsPredictive(cellValue.state)) {
-                // Cell is PREDICTIVE
                 _.each(segment.synapses, function(synapse) {
                     if (segment.cell == cellValue.cellIndex) {
+                        // Predictive cells are the source for distal segments.
                         cellviz.distalSegments.push({
                             source: synapse.presynapticCell,
                             target: segment.cell
@@ -410,7 +416,21 @@ $(function() {
         _.each(spColumns.getCellsInColumn(columnIndex), function(cellValue) {
             selectCell(cellValue, activeSegments);
         });
+    }
 
+    function selectInputCell(cellIndex, connectedSynapses) {
+        var cell = inputCells.cells[cellIndex];
+        console.log(connectedSynapses);
+        _.each(connectedSynapses, function(columnSynapses, columnIndex) {
+            _.each(columnSynapses, function(inputIndex) {
+                if (inputIndex == cellIndex) {
+                    cellviz.proximalSegments.push({
+                        source: columnIndex,
+                        target: inputIndex
+                    });
+                }
+            });
+        });
     }
 
     function updateCellRepresentations() {
@@ -441,7 +461,10 @@ $(function() {
             if (value == 1) {
                 color = cellStates.input.color;
             }
-            inputCells.update(index, {color: color});
+            inputCells.update(index, {
+                color: color,
+                cellIndex: index
+            });
         });
 
         _.times(spColumns.getNumberOfCells(), function(globalCellIndex) {
@@ -488,6 +511,11 @@ $(function() {
         } else if (spColumns.selectedCell){
             var cellValue = spColumns.cells[spColumns.selectedCell];
             selectCell(cellValue, activeSegments);
+        }
+
+        cellviz.proximalSegments = [];
+        if (inputCells.selectedCell) {
+            selectInputCell(inputCells.selectedCell, connectedSynapses);
         }
 
         cellviz.redraw();
@@ -765,11 +793,10 @@ $(function() {
         $('h1').remove();
 
         window.addEventListener( 'keyup', function(event) {
-            // Dunno why but esc key is not firing, something must be swallowing
-            // it. Using ` key instead.
-            if (event.keyCode == 192) {
+            if (event.keyCode == 27) {
                 spColumns.selectedCell = undefined;
                 spColumns.selectedColumn = undefined;
+                inputCells.selectedInput = undefined;
                 updateCellRepresentations();
             }
         }, false );
