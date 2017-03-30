@@ -169,7 +169,10 @@ $(function() {
     ////////////////////////////////////////////////////////
 
     var TmSnapshots = {
-        ACT_CELLS: 'activeCells'
+        ACT_CELLS: 'activeCells',
+        PRD_CELLS: 'predictiveCells',
+        ACT_SEGS: 'activeSegments',
+        MCH_SEGS: 'matchingSegments'
     };
 
     function TemporalMemoryClient(save) {
