@@ -132,24 +132,25 @@ $(function () {
             let x = 0, y = 0, gridx = 0, gridy = 0;
             let id = 0;
             let points = [];
-            let buffer = 1.0;
+            let buffer = 1;
             function pointOffScreen(p) {
                 return (p.x < 0 || p.x > width || p.y < 0 || p.y > height);
             }
             // Add buffer so we fill in all the edges
             x = x - width*buffer;
             y = y - height*buffer;
-            width += width*buffer;
-            height += height*buffer;
+            //width += width*buffer;
+            //height += height*buffer;
             while (y <= height) {
                 gridx = 0;
                 while (x <= width) {
                     let xmod = x;
                     let ymod = y;
-                    let originx = width / 2;
-                    let originy = height / 2;
+                    let originx = 0;
+                    let originy = 0;
 
-                    xmod += y / 2;
+                    if (y % 2 == 0)
+                        xmod += y / 2;
                     // ymod = y - (this.length - Math.sin(60 * (Math.PI / 180)));
                     ymod = y - (y * 0.1);
 
@@ -163,7 +164,8 @@ $(function () {
                         id++, xmod, ymod, this.r, this.g, this.b,
                         this.gridCells[gridy][gridx], this.dotSize
                     );
-                    if (! pointOffScreen(p)) points.push(p);
+                    //if (! pointOffScreen(p)) points.push(p);
+                    points.push(p);
                     x += this.length;
                     gridx++;
                     if (gridx > this.width - 1) gridx = 0;
@@ -205,6 +207,10 @@ $(function () {
             d3.select('#world').on(eventName, handler);
         }
 
+        drag(handler) {
+            d3.select('#world g').call(d3.drag().on("drag", handler));
+        }
+
         prepareRender() {
             this.width = window.innerWidth;
             this.height = window.innerHeight;
@@ -242,9 +248,9 @@ $(function () {
                     .attr('stroke-width', 0.5)
                     .attr('fill-opacity', function(d) {
                         if (!d) return;
-                        let a = 0.2;
+                        let a = dim;
                         if (d.gridCell.isActive()) {
-                            a = .75;
+                            a = on;
                         }
                         return a;
                     });
@@ -330,6 +336,8 @@ $(function () {
         }
 
         render(lite) {
+            let transX = this.transX;
+            let transY = this.transY;
             function treatGroups(groups) {
                 groups.attr('id', function(m) {
                         return 'module-' + m.id;
@@ -339,6 +347,9 @@ $(function () {
                         return 'hidden';
                     })
                     .attr('class', 'module-group');
+                if (transX && transY) {
+                    groups.attr('transform', 'translate(' + transX + ', ' + transY + ')');
+                }
             }
 
             // Update

@@ -89,7 +89,7 @@ $(function () {
         if (numModules > 5) config.lite = true;
         if (numModules == 1) {
             let module = new GridCellModule(
-                0, 4, 3, 20,
+                0, 4, 3, 100,
                 0, 0, 100, 255, 255
             );
             gridCellModules.push(module);
@@ -115,9 +115,24 @@ $(function () {
 
         let renderer = new GridCellModuleRenderer(gridCellModules);
 
+
         renderer.prepareRender();
         renderer.render(config.lite);
-
+        renderer.drag(function(d,i) {
+            let $module = d3.select('g#module-' + d.id);
+            let t = $module.attr("transform");
+            let x = 0;
+            let y = 0;
+            if (t) {
+                let points = t.split('(').pop().split(')').shift().split(',');
+                x = parseInt(points[0]);
+                y = parseInt(points[1]);
+            }
+            this.transX = x + d3.event.dx;
+            this.transY = y + d3.event.dy;
+            $module.attr('transform', "translate(" + [ this.transX, this.transY ] + ")");
+            renderer.render(config.lite);
+        });
         renderer.on('mousemove', function() {
             gridCellModules.forEach(function(module) {
                 module.intersect(d3.event.pageX, d3.event.pageY);
@@ -126,7 +141,6 @@ $(function () {
         });
 
         setupDatGui(gridCellModules, renderer);
-
     }
 
     window.onload = run;
