@@ -38,15 +38,6 @@ $(function () {
 
     function setupDatGui(modules, renderer) {
         let gui = new dat.GUI();
-        let moduleFolders = [];
-
-        function updateAllControllerDisplays() {
-            moduleFolders.forEach(function(folder) {
-                for (let i in folder.__controllers) {
-                    folder.__controllers[i].updateDisplay();
-                }
-            });
-        }
 
         modules.forEach(function(module, i) {
             let folder = gui.addFolder('Module ' + module.id)
@@ -73,7 +64,6 @@ $(function () {
                 renderer.render(config);
             });
             // folder.open();
-            moduleFolders.push(folder);
         });
     }
 
