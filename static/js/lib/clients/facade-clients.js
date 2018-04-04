@@ -238,4 +238,125 @@ $(function() {
     window.HTM.TemporalMemoryClient = TemporalMemoryClient;
     window.HTM.TmSnapshots = TmSnapshots;
     window.HTM.ComputeClient = ComputeClient;
+
+
+    function getRandomArbitrary(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function getRandomConnectionVariation() {
+        let variation = .2
+        return getRandomArbitrary(-variation, variation)
+    }
+
+    /**
+     * @param receptiveFieldPerc
+     * @param dimensions
+     * @returns list of indices in input space
+     */
+    function getRandomReceptiveField(receptiveFieldPerc, dimensions, threshold) {
+        let indices = []
+        let cursor = 0
+        while (cursor < dimensions) {
+            if (Math.random() <= receptiveFieldPerc) {
+                indices.push(cursor)
+            }
+            cursor++
+        }
+        return indices.map((i) => {
+            return {
+                index: i,
+                permanence: threshold + getRandomConnectionVariation()
+            }
+        })
+    }
+
+    function LocalSpClient(save, cfg) {
+        this._id = undefined;
+        this._save = save;
+        if (this._save == undefined) {
+            this._save = false;
+        }
+        this._cfg = cfg
+    }
+
+    LocalSpClient.prototype.initialize = function(params, callback) {
+        this._params = params
+        // Create the Structure
+        this.miniColumns = []
+        let cursor = 0
+        while (cursor < this._cfg.MiniColumnCount) {
+            this.miniColumns.push({
+                index: cursor,
+                state: 0,
+                receptiveField: getRandomReceptiveField(
+                    this._cfg.ReceptiveFieldPerc,
+                    this._cfg.InputSpaceDimensions,
+                    this._cfg.ProximalConnectionThreshold
+                )
+            })
+            cursor++
+        }
+        if (callback) callback(null, {state: this._createDisplayData()})
+    };
+
+    LocalSpClient.prototype._createDisplayData = function() {
+        // Create the SP Data object for display
+        let spData = {
+            potentialPools: this.miniColumns.map((mc) => { return mc.receptiveField }),
+            connectedSynapses: null,
+            permanences: null,
+        }
+        let me = this
+        this.miniColumns.forEach((mc) => {
+            spData.potentialPools.push(mc.receptiveField)
+            spData.connectedSynapses.push()
+        })
+    }
+
+    // LocalSpClient.prototype.compute =
+    //     function(encoding, learn, states, callback) {
+    //         var url = host + '/_sp/';
+    //         if (learn) {
+    //             learn = 'true';
+    //         } else {
+    //             learn = 'false';
+    //         }
+    //         var data = {
+    //             id: this._id,
+    //             encoding: encoding,
+    //             learn: learn,
+    //             states: states
+    //         };
+    //         $.ajax({
+    //             type: 'PUT',
+    //             url: url,
+    //             data: JSON.stringify(data),
+    //             success: function(response) {
+    //                 if (response.state.activeColumns) {
+    //                     response.state.activeColumns = uncompressSdr(
+    //                         response.state.activeColumns
+    //                     );
+    //                 }
+    //                 callback(null, response);
+    //             },
+    //             dataType: 'JSON'
+    //         });
+    //     };
+
+    // LocalSpClient.prototype.getColumnHistory = function(columnIndex, states, callback) {
+    //     var url = host + '/_sp/' + this._id + '/history/' + columnIndex;
+    //     url += '?states=' + states.join(',');
+    //     $.ajax({
+    //         type: 'GET',
+    //         url: url,
+    //         success: function(response) {
+    //             callback(null, response);
+    //         },
+    //         dataType: 'JSON'
+    //     });
+    // };
+
+    window.HTM.LocalSpClient = LocalSpClient;
+
 });

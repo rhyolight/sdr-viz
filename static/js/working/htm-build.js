@@ -8,6 +8,7 @@
         ProximalActivityThreshold: .5,
         InitialProximalConnectionVariation: .3,
         MiniColumnInhibitionPerc: .2,
+
     }
 
     let miniColumns = []
@@ -28,37 +29,37 @@
     }
 
 
-    function getRandomArbitrary(min, max) {
-        return Math.random() * (max - min) + min;
-    }
+function getRandomArbitrary(min, max) {
+    return Math.random() * (max - min) + min;
+}
 
-    function getRandomConnectionVariation() {
-        return getRandomArbitrary(-cfg.InitialProximalConnectionVariation,
-            cfg.InitialProximalConnectionVariation)
-    }
+function getRandomConnectionVariation() {
+    return getRandomArbitrary(-cfg.InitialProximalConnectionVariation,
+        cfg.InitialProximalConnectionVariation)
+}
 
 
-    /**
-     * @param receptiveFieldPerc
-     * @param dimensions
-     * @returns list of indices in input space
-     */
-    function getRandomReceptiveField(receptiveFieldPerc, dimensions) {
-        let indices = []
-        let cursor = 0
-        while (cursor < dimensions) {
-            if (Math.random() <= receptiveFieldPerc) {
-                indices.push(cursor)
-            }
-            cursor++
+/**
+ * @param receptiveFieldPerc
+ * @param dimensions
+ * @returns list of indices in input space
+ */
+function getRandomReceptiveField(receptiveFieldPerc, dimensions) {
+    let indices = []
+    let cursor = 0
+    while (cursor < dimensions) {
+        if (Math.random() <= receptiveFieldPerc) {
+            indices.push(cursor)
         }
-        return indices.map((i) => {
-            return {
-                index: i,
-                permanence: cfg.ProximalConnectionThreshold + getRandomConnectionVariation()
-            }
-        })
+        cursor++
     }
+    return indices.map((i) => {
+        return {
+            index: i,
+            permanence: cfg.ProximalConnectionThreshold + getRandomConnectionVariation()
+        }
+    })
+}
 
 
     function processInput(miniColumns, input) {

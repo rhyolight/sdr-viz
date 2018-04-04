@@ -68,7 +68,13 @@ $(function() {
     }
 
     function initSp(callback) {
-        spClient = new HTM.SpatialPoolerClient(false);
+        // spClient = new HTM.SpatialPoolerClient(false);
+        spClient = new HTM.LocalSpClient(false, {
+            ProximalConnectionThreshold: .85,
+            ReceptiveFieldPerc: .95,
+            InputSpaceDimensions: inputSize,
+            MiniColumnCount: columnDimensions[0],
+        });
         loading(true);
         spClient.initialize(spParams.getParams(), function(err, resp) {
             loading(false);
