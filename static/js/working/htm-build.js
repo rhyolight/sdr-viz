@@ -140,7 +140,7 @@ function getRandomReceptiveField(receptiveFieldPerc, dimensions) {
     $(document).ready(() => {
         setInterval(() => {
             step()
-        }, 1000)
+        }, 600)
     })
 
 
